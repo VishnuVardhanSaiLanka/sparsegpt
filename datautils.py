@@ -20,6 +20,8 @@ def get_tokenizer(model):
                 tokenizer.eos_token_id = 2
             except AttributeError:
                 pass
+    elif "aya" in model.lower():
+        tokenizer = AutoTokenizer.from_pretrained(model)#, use_fast=False)
     else:
         tokenizer = AutoTokenizer.from_pretrained(model, use_fast=False)
     return tokenizer
