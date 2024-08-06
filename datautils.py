@@ -10,7 +10,7 @@ def set_seed(seed):
     np.random.seed(seed)
     torch.random.manual_seed(seed)
 
-def get_tokenizer(model):
+def get_tokenizer(model, hftoken=None):
     if "llama" in model.lower():
         tokenizer = LlamaTokenizer.from_pretrained(model, use_fast=False)
         # fix for transformer 4.28.0.dev0 compatibility
@@ -21,7 +21,7 @@ def get_tokenizer(model):
             except AttributeError:
                 pass
     elif "aya" in model.lower():
-        tokenizer = AutoTokenizer.from_pretrained(model)#, use_fast=False)
+        tokenizer = AutoTokenizer.from_pretrained(model, token=hftoken)
     else:
         tokenizer = AutoTokenizer.from_pretrained(model, use_fast=False)
     return tokenizer
@@ -46,8 +46,8 @@ def get_wikitext2(nsamples, seed, seqlen, model, tokenizer):
     return trainloader, testenc
 
 def get_ptb(nsamples, seed, seqlen, model, tokenizer):
-    traindata = load_dataset('ptb_text_only', 'penn_treebank', split='train')
-    testdata = load_dataset('ptb_text_only', 'penn_treebank', split='test')
+    traindata = load_dataset('ptb_text_only', 'penn_treebank', split='train', trust_remote_code=True)
+    testdata = load_dataset('ptb_text_only', 'penn_treebank', split='test', trust_remote_code=True)
 
     trainenc = tokenizer(" ".join(traindata['sentence']), return_tensors='pt')
     testenc = tokenizer(" ".join(testdata['sentence']), return_tensors='pt')
@@ -96,8 +96,8 @@ def get_c4(nsamples, seed, seqlen, model, tokenizer):
 
     return trainloader, valenc
 
-def get_loaders(name, nsamples=128, seed=0, seqlen=2048, model=''):
-    tokenizer = get_tokenizer(model)
+def get_loaders(name, nsamples=128, seed=0, seqlen=2048, model='', hftoken=None):
+    tokenizer = get_tokenizer(model, hftoken)
     if 'wikitext2' in name:
         return get_wikitext2(nsamples, seed, seqlen, model, tokenizer)
     if 'ptb' in name:

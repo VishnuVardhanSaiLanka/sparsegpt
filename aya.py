@@ -6,6 +6,7 @@ import torch.nn as nn
 from sparsegpt import *
 from modelutils import *
 from quant import *
+from tqdm import tqdm
 
 try:
     import wandb
@@ -79,7 +80,7 @@ def aya_sequential(model, dataloader, dev):
     # print(f"Position IDs: {position_ids}")
 
     quantizers = {}
-    for i in range(len(layers)):
+    for i in tqdm(range(len(layers))):
         layer = layers[i].to(dev)
         full = find_layers(layer)
 
@@ -205,7 +206,7 @@ def aya_eval(model, testenc, dev,  dataset: str, log_wandb: bool = False):
     attention_mask = cache["attention_mask"]
     position_ids = cache["position_ids"]
 
-    for i in range(len(layers)):
+    for i in tqdm(range(len(layers))):
         print(i)
         layer = layers[i].to(dev)
 
@@ -259,7 +260,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("model", type=str, help="model to load")
-    parser.add_argument("hf_token", type=str, help="hf token for model to load, if needed")
+    parser.add_argument("--hftoken", type=str, help="hf token for model to load, if needed")
     parser.add_argument(
         "dataset",
         type=str,
@@ -323,11 +324,11 @@ if __name__ == "__main__":
         assert has_wandb, "wandb not installed try `pip install wandb`"
         wandb.init(config=args)
 
-    model = get_llm(args.model, args.hf_token)
+    model = get_llm(args.model, args.hftoken)
     model.eval()
 
     dataloader, testloader = get_loaders(
-        args.dataset, nsamples=args.nsamples, seed=args.seed, model=args.model, seqlen=model.seqlen
+        args.dataset, nsamples=args.nsamples, seed=args.seed, model=args.model, seqlen=model.seqlen, hftoken=args.hftoken
     )
 
     if (args.sparsity or args.prunen) and not args.gmp:
@@ -341,7 +342,7 @@ if __name__ == "__main__":
 
     for dataset in ["wikitext2", "ptb", "c4"]:
         dataloader, testloader = get_loaders(
-            dataset, seed=args.seed, model=args.model, seqlen=model.seqlen
+            dataset, seed=args.seed, model=args.model, seqlen=model.seqlen, hftoken=args.hftoken
         )
         print("Dataset:", dataset)
         aya_eval(model, testloader, DEV, dataset, args.log_wandb)
